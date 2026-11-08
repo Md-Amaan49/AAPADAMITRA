@@ -1,0 +1,2 @@
+export * from '@aapadamitra/contracts';
+
