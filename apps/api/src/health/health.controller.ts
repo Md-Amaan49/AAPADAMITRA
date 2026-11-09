@@ -18,5 +18,15 @@ export class HealthController {
   getHealth(): HealthResponseDto {
     return this.healthService.check();
   }
+
+  @Get('database')
+  @ApiOperation({ summary: 'Database connectivity and health status' })
+  @ApiResponse({
+    status: 200,
+    description: 'Database connection check result',
+  })
+  async getDatabaseHealth() {
+    return this.healthService.checkDatabase();
+  }
 }
 

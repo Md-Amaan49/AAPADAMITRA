@@ -1,0 +1,610 @@
+// ==============================================================================
+// AAPADAMITRA — Primary Database Schema
+// ==============================================================================
+// Multi-Hazard Disaster Management & Emergency Coordination Platform
+// Database: PostgreSQL 16+ with PostGIS Spatial Extensions
+// Architecture: Modular Monolith Foundation (NestJS + Prisma ORM)
+// ==============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------------------------
+// ENUMS: Controlled Operational Vocabularies
+// ------------------------------------------------------------------------------
+
+enum OrganizationType {
+  GOVERNMENT_AGENCY
+  INFRASTRUCTURE_OPERATOR
+  EMERGENCY_SERVICE
+  COMMUNITY_PARTNER
+  RESEARCH_ACADEMIC
+}
+
+enum RecordStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum UserAccountStatus {
+  ACTIVE
+  PENDING_VERIFICATION
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum AreaType {
+  STATE
+  DISTRICT
+  TALUKA_TEHSIL
+  VILLAGE_BLOCK
+  MUNICIPAL_WARD
+}
+
+enum HazardCategory {
+  HYDROLOGICAL
+  METEOROLOGICAL
+  GEOLOGICAL
+  CLIMATOLOGICAL
+  TECHNOLOGICAL_MAN_MADE
+}
+
+enum ThresholdOperator {
+  GREATER_THAN
+  GREATER_EQUAL
+  LESS_THAN
+  LESS_EQUAL
+  EQUALS
+}
+
+enum AssetType {
+  DAM
+  BARRAGE
+  WEIR
+  EMBANKMENT
+  RIVER_SEGMENT
+  CANAL
+  EVACUATION_SHELTER
+  HOSPITAL
+  EMERGENCY_CONTROL_ROOM
+  RELIEF_CAMP
+}
+
+enum AssetStatus {
+  OPERATIONAL
+  MAINTENANCE
+  IMPAIRED
+  DECOMMISSIONED
+}
+
+enum StationType {
+  RIVER_GAUGE
+  RAIN_GAUGE
+  WEATHER_STATION
+  WATER_QUALITY_STATION
+  GROUNDWATER_SENSOR
+  DAM_INSTRUMENTATION
+}
+
+enum StationStatus {
+  ACTIVE
+  OFFLINE
+  FAULTY
+  DECOMMISSIONED
+}
+
+enum SensorStatus {
+  OPERATIONAL
+  DEGRADED
+  FAULTY
+  CALIBRATING
+  OFFLINE
+}
+
+enum DataSourceType {
+  GOVERNMENT_API
+  IOT_SENSOR_GATEWAY
+  MANUAL_OPERATOR_ENTRY
+  SATELLITE_GRID
+  COMMUNITY_REPORT
+  SYNTHETIC_SIMULATOR
+}
+
+enum DataTrustLevel {
+  AUTHORITATIVE_OFFICIAL
+  VERIFIED_OPERATOR
+  UNVERIFIED_THIRD_PARTY
+  SYNTHETIC_DEMO
+}
+
+enum ObservationQuality {
+  VALID
+  SUSPECT
+  CALCULATED_ESTIMATE
+  CORRECTED
+  REJECTED
+  STALE
+}
+
+enum DataProvenanceType {
+  OBSERVED
+  MANUAL_REPORTED
+  SYNTHETIC
+  DERIVED
+}
+
+enum ModelLifecycleStatus {
+  EXPERIMENTAL
+  CANDIDATE
+  APPROVED_PILOT
+  RETIRED
+}
+
+enum PredictionStatus {
+  GENERATED
+  SUPERSEDED
+  EVALUATED
+  INVALIDATED
+}
+
+enum RiskCategory {
+  LOW
+  MODERATE
+  ELEVATED
+  HIGH
+  SEVERE
+  CRITICAL
+  UNKNOWN
+}
+
+// ------------------------------------------------------------------------------
+// DOMAIN 1: IDENTITY, ORGANIZATIONS & ACCESS CONTROL (MOD-01)
+// ------------------------------------------------------------------------------
+
+model Organization {
+  id                   String           @id @default(uuid()) @db.Uuid
+  code                 String           @unique @db.VarChar(64)
+  name                 String           @db.VarChar(255)
+  organizationType     OrganizationType @map("organization_type")
+  status               RecordStatus     @default(ACTIVE)
+  parentOrganizationId String?          @map("parent_organization_id") @db.Uuid
+
+  // Hierarchy self-relation
+  parentOrganization   Organization?    @relation("OrganizationHierarchy", fields: [parentOrganizationId], references: [id], onDelete: Restrict)
+  childOrganizations   Organization[]   @relation("OrganizationHierarchy")
+
+  // Domain associations
+  users                User[]
+  assets               InfrastructureAsset[]
+  monitoringStations   MonitoringStation[]
+  dataSources          DataSource[]
+  userRoles            UserRole[]
+
+  createdAt            DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("organizations")
+}
+
+model User {
+  id                String            @id @default(uuid()) @db.Uuid
+  organizationId    String?           @map("organization_id") @db.Uuid
+  organization      Organization?     @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  email             String?           @unique @db.VarChar(255)
+  phone             String?           @unique @db.VarChar(32)
+  passwordHash      String?           @map("password_hash") @db.VarChar(255)
+  fullName          String            @map("full_name") @db.VarChar(255)
+  accountStatus     UserAccountStatus @default(ACTIVE) @map("account_status")
+  preferredLanguage String            @default("en") @map("preferred_language") @db.VarChar(10)
+  lastLoginAt       DateTime?         @map("last_login_at") @db.Timestamptz(6)
+
+  userRoles         UserRole[]
+
+  createdAt         DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([organizationId])
+  @@map("users")
+}
+
+model Role {
+  id              String           @id @default(uuid()) @db.Uuid
+  code            String           @unique @db.VarChar(64)
+  name            String           @db.VarChar(128)
+  description     String?          @db.Text
+  isSystemRole    Boolean          @default(false) @map("is_system_role")
+
+  rolePermissions RolePermission[]
+  userRoles       UserRole[]
+
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("roles")
+}
+
+model Permission {
+  id              String           @id @default(uuid()) @db.Uuid
+  code            String           @unique @db.VarChar(64)
+  description     String?          @db.Text
+
+  rolePermissions RolePermission[]
+
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
+
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  id             String              @id @default(uuid()) @db.Uuid
+  userId         String              @map("user_id") @db.Uuid
+  roleId         String              @map("role_id") @db.Uuid
+  organizationId String?             @map("organization_id") @db.Uuid
+  scopeAreaId    String?             @map("scope_area_id") @db.Uuid
+
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           Role                @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  organization   Organization?       @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  scopeArea      AdministrativeArea? @relation(fields: [scopeAreaId], references: [id], onDelete: SetNull)
+
+  grantedAt      DateTime            @default(now()) @map("granted_at") @db.Timestamptz(6)
+  expiresAt      DateTime?           @map("expires_at") @db.Timestamptz(6)
+
+  @@unique([userId, roleId, organizationId, scopeAreaId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+// ------------------------------------------------------------------------------
+// DOMAIN 2: GEOGRAPHY & GIS BOUNDARIES (MOD-02)
+// ------------------------------------------------------------------------------
+
+model AdministrativeArea {
+  id              String               @id @default(uuid()) @db.Uuid
+  parentId        String?              @map("parent_id") @db.Uuid
+  areaType        AreaType             @map("area_type")
+  name            String               @db.VarChar(255)
+  code            String               @db.VarChar(64)
+  stateCode       String               @map("state_code") @db.VarChar(16)
+  districtCode    String?              @map("district_code") @db.VarChar(16)
+
+  // Explicit WGS 84 centroid coordinates
+  latitude        Float?
+  longitude       Float?
+
+  // PostGIS spatial column for MultiPolygon boundaries
+  geom            Unsupported("geometry(MultiPolygon, 4326)")?
+  boundaryGeoJson Json?                @map("boundary_geojson")
+
+  source          String?              @db.VarChar(255)
+  sourceUpdatedAt DateTime?            @map("source_updated_at") @db.Timestamptz(6)
+
+  // Hierarchy self-relation
+  parent          AdministrativeArea?  @relation("AreaHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children        AdministrativeArea[] @relation("AreaHierarchy")
+
+  // Domain references
+  assets          InfrastructureAsset[]
+  userRoles       UserRole[]
+  predictions     Prediction[]
+
+  createdAt       DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([code, stateCode])
+  @@index([parentId])
+  @@index([stateCode, districtCode])
+  @@map("administrative_areas")
+}
+
+// ------------------------------------------------------------------------------
+// DOMAIN 3: HAZARD REGISTRY & THRESHOLDS (MOD-03)
+// ------------------------------------------------------------------------------
+
+model HazardType {
+  id             String                    @id @default(uuid()) @db.Uuid
+  code           String                    @unique @db.VarChar(64)
+  name           String                    @db.VarChar(128)
+  category       HazardCategory
+  description    String?                   @db.Text
+  active         Boolean                   @default(true)
+
+  severityLevels SeverityLevelDefinition[]
+  thresholds     HazardThreshold[]
+  modelVersions  ModelVersion[]
+  predictions    Prediction[]
+
+  createdAt      DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("hazard_types")
+}
+
+model SeverityLevelDefinition {
+  id           String     @id @default(uuid()) @db.Uuid
+  hazardTypeId String     @map("hazard_type_id") @db.Uuid
+  code         String     @db.VarChar(32)
+  label        String     @db.VarChar(64)
+  sortOrder    Int        @map("sort_order")
+  description  String?    @db.Text
+
+  hazardType   HazardType @relation(fields: [hazardTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([hazardTypeId, code])
+  @@map("severity_level_definitions")
+}
+
+model HazardThreshold {
+  id             String              @id @default(uuid()) @db.Uuid
+  hazardTypeId   String              @map("hazard_type_id") @db.Uuid
+  assetId        String?             @map("asset_id") @db.Uuid
+  metricCode     String              @map("metric_code") @db.VarChar(64)
+  operator       ThresholdOperator
+  thresholdValue Decimal             @map("threshold_value") @db.Decimal(12, 4)
+  unit           String              @db.VarChar(32)
+  effectiveFrom  DateTime            @default(now()) @map("effective_from") @db.Timestamptz(6)
+  effectiveTo    DateTime?           @map("effective_to") @db.Timestamptz(6)
+  source         String?             @db.VarChar(255)
+
+  hazardType     HazardType          @relation(fields: [hazardTypeId], references: [id], onDelete: Cascade)
+  asset          InfrastructureAsset? @relation(fields: [assetId], references: [id], onDelete: SetNull)
+
+  createdAt      DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([hazardTypeId, metricCode])
+  @@index([assetId])
+  @@map("hazard_thresholds")
+}
+
+// ------------------------------------------------------------------------------
+// DOMAIN 4: INFRASTRUCTURE & MONITORING ASSETS (MOD-04)
+// ------------------------------------------------------------------------------
+
+model InfrastructureAsset {
+  id                 String              @id @default(uuid()) @db.Uuid
+  organizationId     String?             @map("organization_id") @db.Uuid
+  areaId             String?             @map("area_id") @db.Uuid
+  assetCode          String              @unique @map("asset_code") @db.VarChar(64)
+  assetType          AssetType           @map("asset_type")
+  name               String              @db.VarChar(255)
+  description        String?             @db.Text
+  status             AssetStatus         @default(OPERATIONAL)
+
+  // Spatial location
+  latitude           Float?
+  longitude          Float?
+  geom               Unsupported("geography(Point, 4326)")?
+
+  // Asset-specific metadata (e.g. FRL, MWL, Crest Level, Total Capacity for dams)
+  properties         Json?
+
+  organization       Organization?       @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  area               AdministrativeArea? @relation(fields: [areaId], references: [id], onDelete: SetNull)
+
+  monitoringStations MonitoringStation[]
+  observations       Observation[]
+  predictions        Prediction[]
+  thresholds         HazardThreshold[]
+
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([assetType])
+  @@index([organizationId])
+  @@index([areaId])
+  @@map("infrastructure_assets")
+}
+
+model MonitoringStation {
+  id            String              @id @default(uuid()) @db.Uuid
+  assetId       String?             @map("asset_id") @db.Uuid
+  operatorOrgId String?             @map("operator_org_id") @db.Uuid
+  stationCode   String              @unique @map("station_code") @db.VarChar(64)
+  name          String              @db.VarChar(255)
+  stationType   StationType         @map("station_type")
+  status        StationStatus       @default(ACTIVE)
+
+  latitude      Float
+  longitude     Float
+  geom          Unsupported("geography(Point, 4326)")?
+  elevation     Float?
+
+  metadata      Json?
+
+  asset         InfrastructureAsset? @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  operatorOrg   Organization?        @relation(fields: [operatorOrgId], references: [id], onDelete: SetNull)
+
+  sensors       Sensor[]
+  observations  Observation[]
+
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([assetId])
+  @@index([stationType])
+  @@map("monitoring_stations")
+}
+
+model Sensor {
+  id           String            @id @default(uuid()) @db.Uuid
+  stationId    String            @map("station_id") @db.Uuid
+  sensorCode   String            @unique @map("sensor_code") @db.VarChar(64)
+  sensorType   String            @map("sensor_type") @db.VarChar(64)
+  metricCode   String            @map("metric_code") @db.VarChar(64)
+  unit         String            @db.VarChar(32)
+  installedAt  DateTime?         @map("installed_at") @db.Timestamptz(6)
+  lastSeenAt   DateTime?         @map("last_seen_at") @db.Timestamptz(6)
+  status       SensorStatus      @default(OPERATIONAL)
+  metadata     Json?
+
+  station      MonitoringStation @relation(fields: [stationId], references: [id], onDelete: Cascade)
+  observations Observation[]
+
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@index([stationId])
+  @@index([metricCode])
+  @@map("sensors")
+}
+
+// ------------------------------------------------------------------------------
+// DOMAIN 5: OBSERVATIONS & TELEMETRY INGESTION (MOD-05)
+// ------------------------------------------------------------------------------
+
+model DataSource {
+  id               String         @id @default(uuid()) @db.Uuid
+  code             String         @unique @db.VarChar(64)
+  name             String         @db.VarChar(255)
+  sourceType       DataSourceType @map("source_type")
+  trustLevel       DataTrustLevel @map("trust_level")
+  organizationId   String?        @map("organization_id") @db.Uuid
+  configurationRef String?        @map("configuration_ref") @db.VarChar(255)
+  active           Boolean        @default(true)
+
+  organization     Organization?  @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  observations     Observation[]
+
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("data_sources")
+}
+
+model Observation {
+  id              String              @id @default(uuid()) @db.Uuid
+  dataSourceId    String              @map("data_source_id") @db.Uuid
+  assetId         String?             @map("asset_id") @db.Uuid
+  stationId       String?             @map("station_id") @db.Uuid
+  sensorId        String?             @map("sensor_id") @db.Uuid
+
+  metricCode      String              @map("metric_code") @db.VarChar(64)
+  value           Decimal             @db.Decimal(14, 4)
+  unit            String              @db.VarChar(32)
+
+  observedAt      DateTime            @map("observed_at") @db.Timestamptz(6)
+  receivedAt      DateTime            @default(now()) @map("received_at") @db.Timestamptz(6)
+
+  qualityStatus   ObservationQuality  @default(VALID) @map("quality_status")
+  provenanceType  DataProvenanceType  @default(OBSERVED) @map("provenance_type")
+
+  rawReference    String?             @map("raw_reference") @db.VarChar(255)
+  idempotencyKey  String?             @map("idempotency_key") @db.VarChar(128)
+
+  dataSource      DataSource          @relation(fields: [dataSourceId], references: [id], onDelete: Restrict)
+  asset           InfrastructureAsset? @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  station         MonitoringStation?  @relation(fields: [stationId], references: [id], onDelete: SetNull)
+  sensor          Sensor?             @relation(fields: [sensorId], references: [id], onDelete: SetNull)
+
+  createdAt       DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([dataSourceId, idempotencyKey])
+  @@index([assetId, metricCode, observedAt(sort: Desc)])
+  @@index([stationId, observedAt(sort: Desc)])
+  @@index([observedAt(sort: Desc)])
+  @@map("observations")
+}
+
+// ------------------------------------------------------------------------------
+// DOMAIN 6: AI/ML MODEL REGISTRY & PREDICTIONS (MOD-06)
+// ------------------------------------------------------------------------------
+
+model ModelVersion {
+  id                   String               @id @default(uuid()) @db.Uuid
+  modelCode            String               @map("model_code") @db.VarChar(64)
+  version              String               @db.VarChar(32)
+  hazardTypeId         String               @map("hazard_type_id") @db.Uuid
+  modelFamily          String               @map("model_family") @db.VarChar(64)
+  artifactUri          String               @map("artifact_uri") @db.VarChar(512)
+  status               ModelLifecycleStatus @default(EXPERIMENTAL)
+  trainingDataSummary  String?              @map("training_data_summary") @db.Text
+  evaluationSummary    Json?                @map("evaluation_summary")
+  approvedForUse       Boolean              @default(false) @map("approved_for_use")
+
+  hazardType           HazardType           @relation(fields: [hazardTypeId], references: [id], onDelete: Restrict)
+  predictions          Prediction[]
+
+  createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@unique([modelCode, version])
+  @@index([hazardTypeId])
+  @@map("model_versions")
+}
+
+model Prediction {
+  id                 String              @id @default(uuid()) @db.Uuid
+  modelVersionId     String              @map("model_version_id") @db.Uuid
+  hazardTypeId       String              @map("hazard_type_id") @db.Uuid
+  assetId            String?             @map("asset_id") @db.Uuid
+  areaId             String?             @map("area_id") @db.Uuid
+  jobId              String?             @map("job_id") @db.VarChar(64)
+
+  issuedAt           DateTime            @default(now()) @map("issued_at") @db.Timestamptz(6)
+  validFrom          DateTime            @map("valid_from") @db.Timestamptz(6)
+  validTo            DateTime            @map("valid_to") @db.Timestamptz(6)
+  horizonMinutes     Int                 @map("horizon_minutes")
+
+  status             PredictionStatus    @default(GENERATED)
+  riskCategory       RiskCategory        @map("risk_category")
+  confidenceScore    Decimal?            @map("confidence_score") @db.Decimal(5, 4)
+
+  limitations        String?             @db.Text
+  provenanceMetadata Json?               @map("provenance_metadata")
+
+  modelVersion       ModelVersion        @relation(fields: [modelVersionId], references: [id], onDelete: Restrict)
+  hazardType         HazardType          @relation(fields: [hazardTypeId], references: [id], onDelete: Restrict)
+  asset              InfrastructureAsset? @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  area               AdministrativeArea? @relation(fields: [areaId], references: [id], onDelete: SetNull)
+
+  values             PredictionValue[]
+
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([assetId, issuedAt(sort: Desc)])
+  @@index([areaId, issuedAt(sort: Desc)])
+  @@index([hazardTypeId, issuedAt(sort: Desc)])
+  @@map("predictions")
+}
+
+model PredictionValue {
+  id           String     @id @default(uuid()) @db.Uuid
+  predictionId String     @map("prediction_id") @db.Uuid
+  metricCode   String     @map("metric_code") @db.VarChar(64)
+  value        Decimal    @db.Decimal(14, 4)
+  unit         String     @db.VarChar(32)
+  targetTime   DateTime   @map("target_time") @db.Timestamptz(6)
+
+  lowerBound   Decimal?   @map("lower_bound") @db.Decimal(14, 4)
+  upperBound   Decimal?   @map("upper_bound") @db.Decimal(14, 4)
+
+  latitude     Float?
+  longitude    Float?
+  qualityFlag  String?    @map("quality_flag") @db.VarChar(64)
+
+  prediction   Prediction @relation(fields: [predictionId], references: [id], onDelete: Cascade)
+
+  @@index([predictionId, metricCode, targetTime])
+  @@map("prediction_values")
+}
+

@@ -7,6 +7,10 @@
   "scripts": {
     "dev:web": "pnpm --filter @aapadamitra/web dev",
     "dev:api": "pnpm --filter @aapadamitra/api start:dev",
+    "db:generate": "pnpm --filter @aapadamitra/api prisma:generate",
+    "db:validate": "pnpm --filter @aapadamitra/api prisma:validate",
+    "db:migrate": "pnpm --filter @aapadamitra/api prisma:migrate",
+    "db:studio": "pnpm --filter @aapadamitra/api prisma:studio",
     "build": "pnpm --filter @aapadamitra/contracts build && pnpm --filter @aapadamitra/api build && pnpm --filter @aapadamitra/web build",
     "lint": "pnpm -r run lint",
     "test": "pnpm -r run test"
