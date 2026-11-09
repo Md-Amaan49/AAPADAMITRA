@@ -259,10 +259,10 @@ SELECT extname, extversion
 FROM pg_extension 
 WHERE extname IN ('postgis', 'uuid-ossp');
 
--- 4. Count Deployed Tables in Public Schema (Target: 14 core tables)
+-- 4. Count Deployed Tables in Public Schema (18 domain tables + 1 _prisma_migrations = 19 tables)
 SELECT COUNT(*) AS total_tables 
 FROM information_schema.tables 
-WHERE table_schema = 'public';
+WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
 
 -- 5. Verify GiST Spatial Indexes
 SELECT 

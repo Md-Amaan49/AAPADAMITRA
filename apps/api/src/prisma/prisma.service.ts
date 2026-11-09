@@ -33,9 +33,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         latencyMs: Date.now() - startTime,
       };
     } catch (err) {
+      this.logger.error(`Database health check failed: ${(err as Error).message}`);
       return {
         status: 'disconnected',
-        error: (err as Error).message,
+        error: 'Database service is currently unreachable or disconnected',
       };
     }
   }

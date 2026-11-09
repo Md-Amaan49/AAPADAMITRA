@@ -10,6 +10,8 @@
     "db:generate": "pnpm --filter @aapadamitra/api prisma:generate",
     "db:validate": "pnpm --filter @aapadamitra/api prisma:validate",
     "db:migrate": "pnpm --filter @aapadamitra/api prisma:migrate",
+    "db:deploy": "pnpm --filter @aapadamitra/api prisma migrate deploy",
+    "db:verify": "node scripts/verify-database-integration.js",
     "db:studio": "pnpm --filter @aapadamitra/api prisma:studio",
     "build": "pnpm --filter @aapadamitra/contracts build && pnpm --filter @aapadamitra/api build && pnpm --filter @aapadamitra/web build",
     "lint": "pnpm -r run lint",
