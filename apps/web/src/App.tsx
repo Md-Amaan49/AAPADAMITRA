@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { DistrictProvider } from './context/DistrictContext';
 import { Navbar } from './components/common/Navbar';
 import { Footer } from './components/common/Footer';
 import { ProtectedRoute } from './components/guards/ProtectedRoute';
@@ -85,7 +86,8 @@ const LegacyStatusPage: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <DistrictProvider>
+        <BrowserRouter>
         <Routes>
           {/* Public Portal Layout */}
           <Route element={<PublicLayout />}>
@@ -160,7 +162,8 @@ export const App: React.FC = () => {
           </Route>
         </Routes>
       </BrowserRouter>
-    </AuthProvider>
+    </DistrictProvider>
+  </AuthProvider>
   );
 };
 

@@ -32,7 +32,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <Sidebar currentTab={currentTab} onTabChange={onTabChange} />
 
       {/* Main Content Area */}
-      <div className="dashboard-main">
+      <div className="dashboard-main dashboard-realistic-bg">
         {/* Top bar */}
         <header className="dashboard-topbar">
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>

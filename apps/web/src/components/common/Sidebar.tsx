@@ -58,6 +58,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange }) => 
             <span>Alert Approvals (HITL)</span>
           </button>
           <button
+            onClick={() => onTabChange && onTabChange('citizen-reports')}
+            className={`sidebar-link ${currentTab === 'citizen-reports' ? 'active' : ''}`}
+            style={{ width: '100%', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer' }}
+          >
+            <Radio size={18} />
+            <span>Citizen Incident Reports</span>
+          </button>
+          <button
             onClick={() => onTabChange && onTabChange('infrastructure')}
             className={`sidebar-link ${currentTab === 'infrastructure' ? 'active' : ''}`}
             style={{ width: '100%', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer' }}
@@ -182,6 +190,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange }) => 
         >
           <AlertTriangle size={18} />
           <span>Report Hazard / Incident</span>
+        </button>
+        <button
+          onClick={() => onTabChange && onTabChange('my-reports')}
+          className={`sidebar-link ${currentTab === 'my-reports' ? 'active' : ''}`}
+          style={{ width: '100%', background: 'none', border: 'none', textAlign: 'left', cursor: 'pointer' }}
+        >
+          <FileCheck2 size={18} />
+          <span>My Reports &amp; Official Response</span>
         </button>
         <button
           onClick={() => onTabChange && onTabChange('sos')}

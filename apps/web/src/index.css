@@ -617,3 +617,65 @@ a {
   padding: 1.75rem;
   border: 1px solid var(--border-color);
 }
+
+/* Realistic Atmospheric Backdrops & Glassmorphism */
+.hero-realistic-bg {
+  position: relative;
+  background: 
+    linear-gradient(135deg, rgba(10, 25, 47, 0.90) 0%, rgba(15, 23, 42, 0.92) 100%),
+    url('/images/dam-hero.jpg') center/cover no-repeat,
+    url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat,
+    linear-gradient(135deg, #0a192f 0%, #1e293b 100%);
+  background-blend-mode: multiply, normal, normal;
+  border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+}
+
+.dashboard-realistic-bg {
+  background: 
+    linear-gradient(135deg, rgba(248, 250, 252, 0.97) 0%, rgba(241, 245, 249, 0.98) 100%),
+    url('/images/command-center.jpg') center/cover fixed no-repeat,
+    url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1920&q=80') center/cover fixed no-repeat;
+  background-blend-mode: overlay, normal;
+}
+
+.hazard-card-flood-bg {
+  background: 
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(239, 246, 255, 0.96) 100%),
+    url('https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&w=600&q=80') center/cover no-repeat;
+  background-blend-mode: overlay;
+}
+
+.hazard-card-cyclone-bg {
+  background: 
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 253, 250, 0.96) 100%),
+    url('https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=600&q=80') center/cover no-repeat;
+  background-blend-mode: overlay;
+}
+
+.hazard-card-landslide-bg {
+  background: 
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(254, 252, 232, 0.96) 100%),
+    url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80') center/cover no-repeat;
+  background-blend-mode: overlay;
+}
+
+.hazard-card-tsunami-bg {
+  background: 
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 249, 255, 0.96) 100%),
+    url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80') center/cover no-repeat;
+  background-blend-mode: overlay;
+}
+
+.hazard-card-drought-bg {
+  background: 
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 251, 235, 0.96) 100%),
+    url('https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=600&q=80') center/cover no-repeat;
+  background-blend-mode: overlay;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}

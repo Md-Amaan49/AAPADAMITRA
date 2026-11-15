@@ -102,49 +102,61 @@ export const HazardsPage: React.FC = () => {
 
       {/* Hazard Cards Grid */}
       <div className="grid-2">
-        {hazards.map((h) => (
-          <div key={h.id} className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ background: '#f8fafc', padding: '0.5rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                  {h.icon}
+        {hazards.map((h) => {
+          const bgClass = h.id === 'flood' 
+            ? 'hazard-card-flood-bg' 
+            : h.id === 'cyclone' 
+            ? 'hazard-card-cyclone-bg' 
+            : h.id === 'landslide' 
+            ? 'hazard-card-landslide-bg' 
+            : h.id === 'tsunami' 
+            ? 'hazard-card-tsunami-bg' 
+            : '';
+
+          return (
+            <div key={h.id} className={`card ${bgClass}`} style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ background: '#ffffff', padding: '0.5rem', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: 'var(--shadow-sm)' }}>
+                    {h.icon}
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-main)' }}>
+                      {h.name}
+                    </h3>
+                  </div>
+                </div>
+
+                <div>
+                  {h.status === 'ACTIVE_PILOT' && (
+                    <span className="badge badge-operational">ACTIVE PILOT</span>
+                  )}
+                  {h.status === 'AI_INTEGRATED' && (
+                    <span className="badge badge-info">AI INTEGRATED</span>
+                  )}
+                  {h.status === 'REGISTRY_MONITORED' && (
+                    <span className="badge" style={{ background: '#f1f5f9', color: '#64748b' }}>MONITORED</span>
+                  )}
+                </div>
+              </div>
+
+              <p style={{ color: '#334155', fontSize: '0.875rem', lineHeight: 1.5, marginBottom: '1.25rem' }}>
+                {h.description}
+              </p>
+
+              <div style={{ background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(4px)', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '0.85rem', marginTop: 'auto', fontSize: '0.8rem' }}>
+                <div style={{ marginBottom: '0.5rem' }}>
+                  <span style={{ color: '#64748b', fontWeight: 600 }}>Ground Sensor Telemetry:</span>
+                  <div style={{ color: '#0f172a', fontWeight: 500 }}>{h.telemetry}</div>
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-main)' }}>
-                    {h.name}
-                  </h3>
+                  <span style={{ color: '#64748b', fontWeight: 600 }}>Connected AI Capability:</span>
+                  <div style={{ color: '#1d4ed8', fontWeight: 600 }}>{h.aiModel}</div>
                 </div>
               </div>
-
-              <div>
-                {h.status === 'ACTIVE_PILOT' && (
-                  <span className="badge badge-operational">ACTIVE PILOT</span>
-                )}
-                {h.status === 'AI_INTEGRATED' && (
-                  <span className="badge badge-info">AI INTEGRATED</span>
-                )}
-                {h.status === 'REGISTRY_MONITORED' && (
-                  <span className="badge" style={{ background: '#f1f5f9', color: '#64748b' }}>MONITORED</span>
-                )}
-              </div>
             </div>
-
-            <p style={{ color: '#64748b', fontSize: '0.875rem', lineHeight: 1.5, marginBottom: '1.25rem' }}>
-              {h.description}
-            </p>
-
-            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '0.85rem', marginTop: 'auto', fontSize: '0.8rem' }}>
-              <div style={{ marginBottom: '0.5rem' }}>
-                <span style={{ color: '#64748b', fontWeight: 600 }}>Ground Sensor Telemetry:</span>
-                <div style={{ color: '#0f172a', fontWeight: 500 }}>{h.telemetry}</div>
-              </div>
-              <div>
-                <span style={{ color: '#64748b', fontWeight: 600 }}>Connected AI Capability:</span>
-                <div style={{ color: '#1d4ed8', fontWeight: 600 }}>{h.aiModel}</div>
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useDistrict } from '../../context/DistrictContext';
 import { 
   ShieldAlert, 
   PhoneCall, 
@@ -9,14 +10,17 @@ import {
   LayoutDashboard, 
   Menu, 
   X,
-  AlertTriangle 
+  AlertTriangle,
+  MapPin
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
+  const { currentDistrict, setDistrict, availableDistricts } = useDistrict();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [districtDropdownOpen, setDistrictDropdownOpen] = useState(false);
 
   const getDashboardPath = (role?: string) => {
     switch (role) {
@@ -46,12 +50,12 @@ export const Navbar: React.FC = () => {
       <div className="emergency-ticker">
         <div className="emergency-ticker-content">
           <AlertTriangle size={14} />
-          <span>OFFICIAL DISASTER MANAGEMENT PORTAL — PILOT DEPLOYMENT: VISHNUPURI DAM &amp; NANDED DISTRICT</span>
+          <span>OFFICIAL DISASTER MANAGEMENT PORTAL — JURISDICTION: {currentDistrict.toUpperCase()}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem' }}>
           <span><PhoneCall size={12} style={{ display: 'inline', marginRight: '4px' }} />National: <strong>112</strong></span>
           <span>Disaster: <strong>1070</strong></span>
-          <span>District Control: <strong>02462-235077</strong></span>
+          <span>{currentDistrict === 'Mumbai' ? 'BMC Disaster Desk: 022-22694725' : 'DEOC Desk: 02462-235077'}</span>
         </div>
       </div>
 
@@ -93,6 +97,77 @@ export const Navbar: React.FC = () => {
             <Link to="/contact" className={`nav-link ${location.pathname === '/contact' ? 'active' : ''}`}>
               Helplines
             </Link>
+          </div>
+
+          {/* District Location Selector Pill */}
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={() => setDistrictDropdownOpen(!districtDropdownOpen)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                background: '#f1f5f9',
+                border: '1px solid #cbd5e1',
+                padding: '0.35rem 0.65rem',
+                borderRadius: '9999px',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                color: '#1e293b',
+                cursor: 'pointer'
+              }}
+              title="Click to switch your monitored jurisdiction"
+            >
+              <MapPin size={13} color="#dc2626" />
+              <span>{currentDistrict}</span>
+              <span style={{ fontSize: '0.65rem', color: '#64748b' }}>▼</span>
+            </button>
+
+            {districtDropdownOpen && (
+              <div style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                marginTop: '0.5rem',
+                background: '#ffffff',
+                border: '1px solid #cbd5e1',
+                borderRadius: '8px',
+                boxShadow: 'var(--shadow-lg)',
+                padding: '0.5rem',
+                zIndex: 100,
+                minWidth: '190px',
+                maxHeight: '260px',
+                overflowY: 'auto'
+              }}>
+                <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', padding: '0.35rem 0.5rem' }}>
+                  Select Jurisdiction
+                </div>
+                {availableDistricts.map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => {
+                      setDistrict(d);
+                      setDistrictDropdownOpen(false);
+                    }}
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      textAlign: 'left',
+                      padding: '0.4rem 0.6rem',
+                      borderRadius: '4px',
+                      fontSize: '0.8rem',
+                      fontWeight: d === currentDistrict ? 700 : 500,
+                      background: d === currentDistrict ? '#eff6ff' : 'none',
+                      color: d === currentDistrict ? '#1d4ed8' : '#334155',
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {d} {d === currentDistrict && '✓'}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Auth Actions */}

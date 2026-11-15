@@ -1,17 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '../../components/common/DashboardLayout';
 import { useAuth } from '../../context/AuthContext';
+import { useDistrict } from '../../context/DistrictContext';
 import { 
   LifeBuoy, 
   CheckCircle, 
   PhoneCall, 
   Send, 
   X, 
-  AlertOctagon 
+  AlertOctagon,
+  MapPin
 } from 'lucide-react';
+import { AlertCountdown } from '../../components/alerts/AlertCountdown';
+import { 
+  fetchActiveAlerts, 
+  submitCitizenReport, 
+  fetchMyIncidentReports 
+} from '../../services/apiClient';
 
 export const CitizenDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { currentDistrict } = useDistrict();
   const [activeTab, setActiveTab] = useState('alerts');
 
   // Emergency SOS Modal State
@@ -19,14 +28,24 @@ export const CitizenDashboard: React.FC = () => {
   const [sosConfirmed, setSosConfirmed] = useState(false);
   const [sosDispatched, setSosDispatched] = useState(false);
 
+  // Active Alerts State
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alertsLoading, setAlertsLoading] = useState(false);
+
   // Incident Reporting Form State
   const [reportForm, setReportForm] = useState({
     hazardType: 'WATERLOGGING',
     locality: '',
     description: '',
-    contactPhone: '',
+    contactPhone: user?.email === 'citizen@aapadamitra.gov.in' ? '9800000004' : '',
+    urgency: 'HIGH',
   });
-  const [reportSubmitted, setReportSubmitted] = useState(false);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportSuccessMsg, setReportSuccessMsg] = useState<string | null>(null);
+
+  // My Reports & Authority Responses State
+  const [myReports, setMyReports] = useState<any[]>([]);
+  const [reportsLoading, setReportsLoading] = useState(false);
 
   // Family Safety Checklist
   const [checklist, setChecklist] = useState({
@@ -42,6 +61,31 @@ export const CitizenDashboard: React.FC = () => {
     setChecklist({ ...checklist, [key]: !checklist[key] });
   };
 
+  // Load Active Alerts for user's district
+  useEffect(() => {
+    setAlertsLoading(true);
+    fetchActiveAlerts(currentDistrict)
+      .then((data) => setAlerts(data))
+      .catch(() => setAlerts([]))
+      .finally(() => setAlertsLoading(false));
+  }, [currentDistrict]);
+
+  // Load My Incident Reports
+  const loadMyReports = () => {
+    setReportsLoading(true);
+    const phone = reportForm.contactPhone || '9800000004';
+    fetchMyIncidentReports(phone, user?.id)
+      .then((data) => setMyReports(data))
+      .catch(() => setMyReports([]))
+      .finally(() => setReportsLoading(false));
+  };
+
+  useEffect(() => {
+    if (activeTab === 'my-reports') {
+      loadMyReports();
+    }
+  }, [activeTab]);
+
   const handleTriggerSOS = () => {
     if (!sosConfirmed) return;
     setSosDispatched(true);
@@ -52,15 +96,39 @@ export const CitizenDashboard: React.FC = () => {
     }, 4000);
   };
 
-  const handleReportSubmit = (e: React.FormEvent) => {
+  const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setReportSubmitted(true);
+    setReportSubmitting(true);
+    setReportSuccessMsg(null);
+
+    try {
+      const payload = {
+        district: currentDistrict,
+        locality: reportForm.locality,
+        hazardType: reportForm.hazardType,
+        description: reportForm.description,
+        citizenName: user?.fullName || 'Resident Citizen',
+        citizenPhone: reportForm.contactPhone || '9800000004',
+        urgency: reportForm.urgency,
+      };
+
+      const res = await submitCitizenReport(payload);
+      setReportSuccessMsg(`Report #${res.id} transmitted to ${currentDistrict} DEOC. An authority officer will inspect and update status.`);
+      setReportForm({ ...reportForm, locality: '', description: '' });
+      setTimeout(() => {
+        setActiveTab('my-reports');
+      }, 2500);
+    } catch (err: any) {
+      alert(err.message || 'Failed to submit report');
+    } finally {
+      setReportSubmitting(false);
+    }
   };
 
   return (
     <DashboardLayout
       title="Citizen Safety &amp; Emergency Portal"
-      subtitle={`Welcome, ${user?.fullName || 'Resident'} &bull; District: Nanded, Maharashtra`}
+      subtitle={`Resident: ${user?.fullName || 'Citizen'} • Monitored District: ${currentDistrict.toUpperCase()}`}
       currentTab={activeTab}
       onTabChange={setActiveTab}
     >
@@ -87,10 +155,10 @@ export const CitizenDashboard: React.FC = () => {
                   <LifeBuoy size={28} />
                 </div>
                 <h4 style={{ color: '#991b1b', fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-                  SOS Distress Alert Dispatched to DEOC
+                  SOS Distress Alert Dispatched to {currentDistrict} DEOC
                 </h4>
                 <p style={{ color: '#475569', fontSize: '0.85rem', lineHeight: 1.5 }}>
-                  Your incident has been transmitted to Nanded District Emergency Control Desk (Ticket #SOS-{Math.floor(1000 + Math.random() * 9000)}). Stay in place on high ground if safe.
+                  Your emergency coordinates and identity have been received by the control desk (Ticket #SOS-{Math.floor(1000 + Math.random() * 9000)}). Stay on high ground if safe.
                 </p>
                 <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#fee2e2', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, color: '#991b1b' }}>
                   Keep your phone line free. Emergency responders may call you immediately.
@@ -99,7 +167,7 @@ export const CitizenDashboard: React.FC = () => {
             ) : (
               <div>
                 <p style={{ fontSize: '0.875rem', color: '#475569', lineHeight: 1.6, marginBottom: '1.25rem' }}>
-                  Triggering SOS transmits an immediate life-safety distress alert with your user profile and current jurisdiction to the District Emergency Operations Centre (DEOC) for priority dispatch.
+                  Triggering SOS transmits an immediate life-safety distress alert for <strong>{currentDistrict}</strong> jurisdiction to the District Emergency Operations Centre (DEOC) for priority rescue dispatch.
                 </p>
 
                 <div style={{
@@ -151,7 +219,7 @@ export const CitizenDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Emergency Distress Banner */}
+      {/* Emergency Distress Action Banner */}
       <div style={{
         background: 'linear-gradient(135deg, #b91c1c, #7f1d1d)',
         color: '#ffffff',
@@ -162,12 +230,13 @@ export const CitizenDashboard: React.FC = () => {
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '1rem'
+        gap: '1rem',
+        boxShadow: 'var(--shadow-md)'
       }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '1.1rem' }}>
             <LifeBuoy size={20} />
-            <span>Are You Trapped or in Immediate Danger?</span>
+            <span>Immediate Danger / Rescue Required in {currentDistrict}?</span>
           </div>
           <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: '#fecaca' }}>
             If you or people near you need urgent rescue assistance, dial 112 or trigger an emergency SOS.
@@ -201,56 +270,83 @@ export const CitizenDashboard: React.FC = () => {
       {/* Verified Alerts Tab */}
       {(!activeTab || activeTab === 'alerts') && (
         <div>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--primary-navy)' }}>
-              Verified Disaster Alerts &amp; Official Advisories
-            </h2>
-            <p style={{ color: '#64748b', fontSize: '0.875rem' }}>
-              All alerts displayed below have been authenticated by the District Disaster Management Authority (DDMA), Nanded.
-            </p>
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* Active Alert 1 */}
-            <div className="card" style={{ borderLeft: '4px solid #f59e0b', marginBottom: 0 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span className="badge badge-warning">WATER DISCHARGE WARNING</span>
-                  <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>Vishnupuri Dam Controlled Release</span>
-                </div>
-                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                  Issued: Today, 08:30 AM IST &bull; Authority: DEOC Nanded
-                </div>
-              </div>
-              <p style={{ color: '#334155', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '1rem' }}>
-                4 radial gates of Vishnupuri Barrage have been opened to 1.2 meters. Citizens residing along the banks of Godavari River in Sangvi, Degaon, and Vishnupuri are advised not to venture near the riverbed and to move livestock to higher terrain.
+          <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--primary-navy)' }}>
+                Verified Disaster Alerts for {currentDistrict}
+              </h2>
+              <p style={{ color: '#64748b', fontSize: '0.875rem' }}>
+                All alerts below are officially vetted and authorized by District Authorities under the Disaster Management Act.
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.8rem', color: '#64748b' }}>
-                <span>Target Region: <strong>Godavari Riverbank Villages</strong></span>
-                <span>Expected Duration: <strong>Next 12 Hours</strong></span>
-              </div>
             </div>
-
-            {/* Active Alert 2 */}
-            <div className="card" style={{ borderLeft: '4px solid #3b82f6', marginBottom: 0 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span className="badge badge-info">WEATHER ADVISORY</span>
-                  <span style={{ fontWeight: 700, fontSize: '1.05rem' }}>Moderate to Heavy Rain Forecast (IMD)</span>
-                </div>
-                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                  Issued: Today, 06:00 AM IST &bull; Authority: Regional Met Centre
-                </div>
-              </div>
-              <p style={{ color: '#334155', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '1rem' }}>
-                Scattered heavy rainfall accompanied by gusty winds expected across Nanded, Biloli, and Mudkhed talukas over the next 24 to 48 hours. Fishermen and boat operators are advised to suspend operations.
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.8rem', color: '#64748b' }}>
-                <span>Target Region: <strong>Nanded District (All Talukas)</strong></span>
-                <span>Severity: <strong>Yellow Watch</strong></span>
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f1f5f9', padding: '0.35rem 0.75rem', borderRadius: '6px', fontSize: '0.8rem', color: '#475569' }}>
+              <MapPin size={14} color="#dc2626" />
+              <span>Location: <strong>{currentDistrict}</strong></span>
             </div>
           </div>
+
+          {alertsLoading ? (
+            <div className="card" style={{ textAlign: 'center', padding: '2rem' }}>Loading active advisories...</div>
+          ) : alerts.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: '2.5rem', background: '#f0fdf4', borderColor: '#bbf7d0' }}>
+              <CheckCircle size={36} color="#16a34a" style={{ margin: '0 auto 0.75rem auto' }} />
+              <h3 style={{ color: '#166534', fontWeight: 700 }}>No Active Disaster Alerts in {currentDistrict}</h3>
+              <p style={{ color: '#14532d', fontSize: '0.85rem', marginTop: '0.35rem' }}>
+                Current weather, hydraulic, and seismic parameters are within normal thresholds.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {alerts.map((alert) => (
+                <div
+                  key={alert.id}
+                  className="card"
+                  style={{
+                    borderLeft: alert.severity === 'CRITICAL_EVACUATION' || alert.severity === 'WARNING'
+                      ? '4px solid #dc2626'
+                      : '4px solid #f59e0b',
+                    marginBottom: 0
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span className={`badge ${alert.severity === 'CRITICAL_EVACUATION' || alert.severity === 'WARNING' ? 'badge-critical' : 'badge-warning'}`}>
+                        {alert.severity.replace(/_/g, ' ')}
+                      </span>
+                      <span style={{ fontWeight: 700, fontSize: '1.1rem', color: '#0f172a' }}>{alert.title}</span>
+                    </div>
+
+                    {/* Live Ticking Countdown Timer */}
+                    <AlertCountdown
+                      onsetAt={alert.onsetAt}
+                      expiresAt={alert.expiresAt}
+                      createdAt={alert.createdAt}
+                    />
+                  </div>
+
+                  <p style={{ color: '#334155', fontSize: '0.9rem', lineHeight: 1.6, marginBottom: '1rem' }}>
+                    {alert.summary}
+                  </p>
+
+                  <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.8rem', color: '#475569' }}>
+                    <div style={{ marginBottom: '0.25rem' }}>
+                      Target Areas: <strong>{alert.affectedAreas.join(', ')}</strong>
+                    </div>
+                    {alert.evacuationRoutes && (
+                      <div style={{ marginBottom: '0.25rem', color: '#166534' }}>
+                        Safe Evacuation Routes: <strong>{alert.evacuationRoutes.join(' • ')}</strong>
+                      </div>
+                    )}
+                    {alert.safeShelters && (
+                      <div style={{ color: '#1d4ed8' }}>
+                        Relief Shelters: <strong>{alert.safeShelters.join(' • ')}</strong>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -258,70 +354,62 @@ export const CitizenDashboard: React.FC = () => {
       {activeTab === 'report' && (
         <div className="card">
           <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--primary-navy)', marginBottom: '0.5rem' }}>
-            Report a Local Hazard or Ground Incident
+            Report a Local Ground Incident or Hazard in {currentDistrict}
           </h2>
           <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-            Provide timely information on local waterlogging, breach of culverts, fallen electrical trees, or trapped citizens.
+            Provide timely information on local road waterlogging, breached culverts, fallen trees, or trapped citizens.
           </p>
 
-          {reportSubmitted ? (
-            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '1.5rem', borderRadius: '8px', textAlign: 'center' }}>
-              <CheckCircle size={40} color="#16a34a" style={{ margin: '0 auto 0.75rem auto' }} />
-              <h3 style={{ color: '#166534', fontWeight: 700, marginBottom: '0.5rem' }}>Citizen Report Successfully Logged</h3>
-              <p style={{ color: '#14532d', fontSize: '0.85rem' }}>
-                Report Reference ID #CIT-{Math.floor(100000 + Math.random() * 900000)} has been assigned and dispatched to field response teams. Thank you for your community vigilance.
-              </p>
-              <button
-                onClick={() => setReportSubmitted(false)}
-                className="btn-secondary"
-                style={{ marginTop: '1rem' }}
-              >
-                Submit Another Report
-              </button>
+          {reportSuccessMsg && (
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '1.25rem', borderRadius: '8px', color: '#166534', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <CheckCircle size={20} />
+              <span>{reportSuccessMsg}</span>
             </div>
-          ) : (
-            <form onSubmit={handleReportSubmit}>
-              <div className="grid-2">
-                <div className="form-group">
-                  <label className="form-label">Hazard / Incident Classification</label>
-                  <select
-                    className="form-select"
-                    value={reportForm.hazardType}
-                    onChange={(e) => setReportForm({ ...reportForm, hazardType: e.target.value })}
-                  >
-                    <option value="WATERLOGGING">Road Inundation / Waterlogging</option>
-                    <option value="DAM_OVERFLOW">River Bank Spill / Overtopping</option>
-                    <option value="ELECTRICAL_HAZARD">Live Power Cable / Substation Submersion</option>
-                    <option value="TREE_COLLAPSE">Fallen Tree / Blocked Road</option>
-                    <option value="TRAPPED_PERSON">Stranded Citizens / Need Evacuation</option>
-                  </select>
-                </div>
+          )}
 
-                <div className="form-group">
-                  <label className="form-label">Locality / Landmark in Nanded</label>
-                  <input
-                    type="text"
-                    required
-                    className="form-input"
-                    value={reportForm.locality}
-                    onChange={(e) => setReportForm({ ...reportForm, locality: e.target.value })}
-                    placeholder="e.g. Near Sangvi Ghat Temple, Nanded"
-                  />
-                </div>
+          <form onSubmit={handleReportSubmit}>
+            <div className="grid-2">
+              <div className="form-group">
+                <label className="form-label">Hazard / Incident Classification</label>
+                <select
+                  className="form-select"
+                  value={reportForm.hazardType}
+                  onChange={(e) => setReportForm({ ...reportForm, hazardType: e.target.value })}
+                >
+                  <option value="WATERLOGGING">Road Inundation / Waterlogging</option>
+                  <option value="DAM_OVERFLOW">River Bank Spill / Overtopping</option>
+                  <option value="ELECTRICAL_HAZARD">Live Power Cable / Substation Submersion</option>
+                  <option value="TREE_COLLAPSE">Fallen Tree / Blocked Road</option>
+                  <option value="TRAPPED_PERSON">Stranded Citizens / Need Evacuation</option>
+                </select>
               </div>
 
               <div className="form-group">
-                <label className="form-label">Detailed Incident Narrative</label>
-                <textarea
+                <label className="form-label">Locality / Landmark in {currentDistrict}</label>
+                <input
+                  type="text"
                   required
-                  rows={4}
-                  className="form-textarea"
-                  value={reportForm.description}
-                  onChange={(e) => setReportForm({ ...reportForm, description: e.target.value })}
-                  placeholder="Describe the estimated water depth, affected houses, number of people stranded, or route blockages..."
+                  className="form-input"
+                  value={reportForm.locality}
+                  onChange={(e) => setReportForm({ ...reportForm, locality: e.target.value })}
+                  placeholder={`e.g. Near Sangvi Ghat, ${currentDistrict}`}
                 />
               </div>
+            </div>
 
+            <div className="form-group">
+              <label className="form-label">Detailed Incident Narrative</label>
+              <textarea
+                required
+                rows={4}
+                className="form-textarea"
+                value={reportForm.description}
+                onChange={(e) => setReportForm({ ...reportForm, description: e.target.value })}
+                placeholder="Describe estimated water depth, trapped individuals, vehicle stalls, or power outages..."
+              />
+            </div>
+
+            <div className="grid-2">
               <div className="form-group">
                 <label className="form-label">Contact Mobile for Field Verification</label>
                 <input
@@ -334,16 +422,128 @@ export const CitizenDashboard: React.FC = () => {
                   placeholder="10-digit mobile number"
                 />
               </div>
-
-              <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.75rem', color: '#64748b', marginBottom: '1.25rem' }}>
-                False reports waste critical rescue resources and are punishable by law.
+              <div className="form-group">
+                <label className="form-label">Urgency Level</label>
+                <select
+                  className="form-select"
+                  value={reportForm.urgency}
+                  onChange={(e) => setReportForm({ ...reportForm, urgency: e.target.value })}
+                >
+                  <option value="STANDARD">Standard — Property or Traffic Hazard</option>
+                  <option value="HIGH">High — Rising Water Threatening Homes</option>
+                  <option value="LIFE_THREATENING">Critical — Human Life at Immediate Risk</option>
+                </select>
               </div>
+            </div>
 
-              <button type="submit" className="btn-primary">
-                <Send size={16} />
-                <span>Submit Verified Incident Report</span>
-              </button>
-            </form>
+            <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '0.75rem', color: '#64748b', marginBottom: '1.25rem' }}>
+              Submitting verified reports alerts the {currentDistrict} Emergency Operations Centre. False reports waste critical resources and are punishable under Section 54 of the Disaster Management Act.
+            </div>
+
+            <button type="submit" disabled={reportSubmitting} className="btn-primary">
+              <Send size={16} />
+              <span>{reportSubmitting ? 'Transmitting Report...' : 'Submit Incident to Authority'}</span>
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Two-Way Citizen Feedback Tab: My Reported Incidents & Authority Response */}
+      {activeTab === 'my-reports' && (
+        <div className="card">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            <div>
+              <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--primary-navy)', margin: 0 }}>
+                My Reported Incidents &amp; Official Response Status
+              </h2>
+              <p style={{ color: '#64748b', fontSize: '0.85rem', margin: '0.25rem 0 0 0' }}>
+                Track live actions taken by District Emergency Operations Centre and response teams for your reports.
+              </p>
+            </div>
+            <button
+              onClick={loadMyReports}
+              className="btn-secondary"
+              style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}
+            >
+              Refresh Status
+            </button>
+          </div>
+
+          {reportsLoading ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Loading your incident records...</div>
+          ) : myReports.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>
+              You have not submitted any incident reports yet.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {myReports.map((rep) => (
+                <div
+                  key={rep.id}
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    padding: '1.25rem',
+                    boxShadow: 'var(--shadow-sm)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                        <span className="badge badge-info">{rep.hazardType}</span>
+                        <span style={{ fontWeight: 700, fontSize: '1.05rem', color: '#0f172a' }}>{rep.locality}</span>
+                        <span style={{ fontSize: '0.8rem', color: '#64748b' }}>({rep.id})</span>
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                        District: <strong>{rep.district}</strong> • Reported on: {new Date(rep.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+
+                    <div>
+                      <span className={`badge ${rep.status === 'RESOLVED' ? 'badge-operational' : rep.status === 'INSPECTION_DISPATCHED' ? 'badge-warning' : 'badge-info'}`}>
+                        {rep.status.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <p style={{ color: '#334155', fontSize: '0.875rem', lineHeight: 1.5, margin: '0 0 1rem 0' }}>
+                    <strong>Reported Condition:</strong> {rep.description}
+                  </p>
+
+                  {/* Two-Way Authority Response Feedback Box */}
+                  {rep.authorityResponse ? (
+                    <div style={{
+                      background: '#f0fdf4',
+                      borderLeft: '4px solid #16a34a',
+                      borderRadius: '6px',
+                      padding: '1rem',
+                      marginTop: '0.5rem'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: '#166534', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <CheckCircle size={16} />
+                          <span>OFFICIAL AUTHORITY DISPATCH &bull; {rep.authorityResponse.respondedBy}</span>
+                        </div>
+                        <span style={{ fontSize: '0.7rem', color: '#15803d' }}>
+                          {new Date(rep.authorityResponse.respondedAt).toLocaleTimeString()}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: '#14532d', lineHeight: 1.5, fontWeight: 500 }}>
+                        {rep.authorityResponse.message}
+                      </div>
+                      <div style={{ marginTop: '0.35rem', fontSize: '0.75rem', color: '#166534' }}>
+                        Action Logged: <code>{rep.authorityResponse.actionTaken}</code>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ background: '#f8fafc', padding: '0.65rem 0.85rem', borderRadius: '6px', fontSize: '0.78rem', color: '#64748b' }}>
+                      Status: Transmitted to {rep.district} Control Desk. Awaiting official field unit dispatch.
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}
@@ -352,7 +552,7 @@ export const CitizenDashboard: React.FC = () => {
       {activeTab === 'shelters' && (
         <div className="card">
           <div className="card-header">
-            <h3 className="card-title">Designated DDMA Relief Shelters &amp; Camps</h3>
+            <h3 className="card-title">Designated DDMA Relief Shelters &amp; Camps in {currentDistrict}</h3>
             <span className="badge badge-operational">ACTIVE MONITORING</span>
           </div>
           <div className="table-container">
@@ -367,27 +567,55 @@ export const CitizenDashboard: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td style={{ fontWeight: 600 }}>Government Polytechnic College Camp</td>
-                  <td>Baba Nagar, Nanded</td>
-                  <td>500 Citizens</td>
-                  <td>Drinking water, Emergency medical desk, Power backup</td>
-                  <td>02462-251234</td>
-                </tr>
-                <tr>
-                  <td style={{ fontWeight: 600 }}>Municipal Corporation School #4</td>
-                  <td>Old Nanded Market Road</td>
-                  <td>300 Citizens</td>
-                  <td>Food rations, Community kitchen, First aid</td>
-                  <td>02462-234890</td>
-                </tr>
-                <tr>
-                  <td style={{ fontWeight: 600 }}>Biloli Tehsil Community Hall</td>
-                  <td>Tehsil Campus, Biloli</td>
-                  <td>400 Citizens</td>
-                  <td>Resting mats, Sanitation units, Clean water</td>
-                  <td>02465-220111</td>
-                </tr>
+                {currentDistrict === 'Mumbai' ? (
+                  <>
+                    <tr>
+                      <td style={{ fontWeight: 600 }}>Dadar Municipal Girls High School Hall</td>
+                      <td>Near Shivaji Park, Dadar West, Mumbai</td>
+                      <td>400 Citizens</td>
+                      <td>Drinking water, Emergency medical desk, Power generator</td>
+                      <td>022-24301234</td>
+                    </tr>
+                    <tr>
+                      <td style={{ fontWeight: 600 }}>Bandra Municipal Community Centre</td>
+                      <td>Hill Road, Bandra West, Mumbai</td>
+                      <td>350 Citizens</td>
+                      <td>Dry rations, First aid, Community kitchen</td>
+                      <td>022-26425678</td>
+                    </tr>
+                    <tr>
+                      <td style={{ fontWeight: 600 }}>Kurla West Ward Relief Camp</td>
+                      <td>LBS Marg, Kurla West, Mumbai</td>
+                      <td>500 Citizens</td>
+                      <td>Sanitation units, Clean water, Inflatable boats stationed</td>
+                      <td>022-26509988</td>
+                    </tr>
+                  </>
+                ) : (
+                  <>
+                    <tr>
+                      <td style={{ fontWeight: 600 }}>Government Polytechnic College Camp</td>
+                      <td>Baba Nagar, Nanded</td>
+                      <td>500 Citizens</td>
+                      <td>Drinking water, Emergency medical desk, Power backup</td>
+                      <td>02462-251234</td>
+                    </tr>
+                    <tr>
+                      <td style={{ fontWeight: 600 }}>Municipal Corporation School #4</td>
+                      <td>Old Nanded Market Road, Nanded</td>
+                      <td>300 Citizens</td>
+                      <td>Food rations, Community kitchen, First aid</td>
+                      <td>02462-234890</td>
+                    </tr>
+                    <tr>
+                      <td style={{ fontWeight: 600 }}>Biloli Tehsil Community Hall</td>
+                      <td>Tehsil Campus, Biloli, Nanded</td>
+                      <td>400 Citizens</td>
+                      <td>Resting mats, Sanitation units, Clean water</td>
+                      <td>02465-220111</td>
+                    </tr>
+                  </>
+                )}
               </tbody>
             </table>
           </div>
@@ -401,7 +629,7 @@ export const CitizenDashboard: React.FC = () => {
             Household Emergency Preparedness Checklist
           </h2>
           <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
-            Keep your family prepared ahead of heavy monsoon or dam discharge periods.
+            Keep your family prepared ahead of disaster onset periods.
           </p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -467,7 +695,7 @@ export const CitizenDashboard: React.FC = () => {
                 onChange={() => toggleChecklist('evacRoute')}
               />
               <span style={{ fontSize: '0.875rem', color: '#1e293b' }}>
-                Awareness of the nearest DDMA relief shelter and safe high-ground route
+                Awareness of the nearest {currentDistrict} relief shelter and safe high-ground route
               </span>
             </label>
           </div>
