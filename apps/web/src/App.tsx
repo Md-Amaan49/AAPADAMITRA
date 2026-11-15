@@ -1,6 +1,7 @@
 import React from 'react';
 import { Header } from './components/Header';
 import { SystemStatusCard } from './components/SystemStatusCard';
+import { AiPredictionsDashboard } from './components/AiPredictionsDashboard';
 
 export const App: React.FC = () => {
   return (
@@ -9,14 +10,15 @@ export const App: React.FC = () => {
         <Header />
         <div className="divider" />
         <p className="description">
-          This is only a development placeholder, not the final product UI. The monorepo
-          foundation, modular backend architecture, contracts, and AI services are being
-          initialized under Milestone 01.
+          This is the AAPADAMITRA operational development dashboard. Backend microservices,
+          geospatial database layer, and hosted multi-hazard AI inference integrations are
+          active.
         </p>
         <SystemStatusCard />
+        <AiPredictionsDashboard />
       </main>
       <footer className="footer-note">
-        AAPADAMITRA Platform Foundation &bull; Windows 10 Development Environment
+        AAPADAMITRA Platform Foundation &bull; Multi-Hazard Decision Support System
       </footer>
     </div>
   );

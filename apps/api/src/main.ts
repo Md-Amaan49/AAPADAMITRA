@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
+import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
@@ -10,6 +11,16 @@ async function bootstrap() {
   // Global API Prefix: /api/v1
   const globalPrefix = configService.get<string>('API_GLOBAL_PREFIX', '/api/v1').replace(/^\//, '');
   app.setGlobalPrefix(globalPrefix);
+
+  // Global Validation Pipe for Strict Contract Validation
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transformOptions: { enableImplicitConversion: true },
+    })
+  );
 
   // Enable Cross-Origin Resource Sharing (CORS)
   app.enableCors({
