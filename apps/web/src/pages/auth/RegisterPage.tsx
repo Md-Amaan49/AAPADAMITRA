@@ -42,6 +42,8 @@ export const RegisterPage: React.FC = () => {
         email: formData.email,
         phone: formData.phone,
         password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        termsAccepted: formData.termsAccepted,
       });
 
       setSuccess(true);
@@ -233,3 +235,4 @@ export const RegisterPage: React.FC = () => {
     </div>
   );
 };
+

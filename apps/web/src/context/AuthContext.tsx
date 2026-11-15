@@ -55,7 +55,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.message || 'Authentication failed. Please verify your credentials.');
+        const errorMsg = Array.isArray(data.message)
+          ? data.message.join('. ')
+          : (data.message || 'Authentication failed. Please verify your credentials.');
+        throw new Error(errorMsg);
       }
 
       setToken(data.accessToken);
@@ -80,7 +83,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const resData = await res.json();
     if (!res.ok) {
-      throw new Error(resData.message || 'Registration failed.');
+      const errorMessage = Array.isArray(resData.message)
+        ? resData.message.join('. ')
+        : (resData.message || 'Registration failed.');
+      throw new Error(errorMessage);
     }
     return resData;
   };
@@ -118,3 +124,4 @@ export const useAuth = () => {
   }
   return context;
 };
+
