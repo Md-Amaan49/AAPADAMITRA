@@ -214,6 +214,12 @@ export const LoginPage: React.FC = () => {
               4. Citizen
             </button>
           </div>
+          <div style={{ marginTop: '0.75rem', fontSize: '0.72rem', color: '#64748b', lineHeight: 1.5, background: '#ffffff', padding: '0.5rem', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+            <div>&bull; <strong>Authority:</strong> admin@aapadamitra.gov.in &bull; Password: <code>AuthorityPass123!</code></div>
+            <div>&bull; <strong>Operator:</strong> operator@aapadamitra.gov.in &bull; Password: <code>OperatorPass123!</code></div>
+            <div>&bull; <strong>Responder:</strong> responder@aapadamitra.gov.in &bull; Password: <code>ResponderPass123!</code></div>
+            <div>&bull; <strong>Citizen:</strong> citizen@aapadamitra.gov.in &bull; Password: <code>CitizenPass123!</code></div>
+          </div>
         </div>
       </div>
     </div>

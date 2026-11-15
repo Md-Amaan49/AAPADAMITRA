@@ -20,6 +20,7 @@ interface InMemUser {
   phone: string;
   fullName: string;
   passwordHash: string;
+  altPasswordHashes?: string[];
   role: string;
   roles: string[];
   accountStatus: string;
@@ -48,7 +49,7 @@ export class AuthService {
         fullName: 'District Collector Nanded',
         role: AUTH_ROLES.DISTRICT_AUTHORITY,
         roles: [AUTH_ROLES.DISTRICT_AUTHORITY, AUTH_ROLES.ADMIN],
-        password: 'Admin@12345',
+        passwords: ['Admin@12345', 'AuthorityPass123!'],
       },
       {
         id: 'usr-oper-00000000-0000-0000-0000-000000000002',
@@ -57,7 +58,7 @@ export class AuthService {
         fullName: 'Vishnupuri Dam Monitoring Officer',
         role: AUTH_ROLES.MONITORING_OPERATOR,
         roles: [AUTH_ROLES.MONITORING_OPERATOR, AUTH_ROLES.CONTROL_ROOM_OPERATOR],
-        password: 'Operator@12345',
+        passwords: ['Operator@12345', 'OperatorPass123!'],
       },
       {
         id: 'usr-resp-00000000-0000-0000-0000-000000000003',
@@ -66,7 +67,7 @@ export class AuthService {
         fullName: 'NDRF Field Commander 04',
         role: AUTH_ROLES.EMERGENCY_RESPONDER,
         roles: [AUTH_ROLES.EMERGENCY_RESPONDER, AUTH_ROLES.FIELD_RESPONDER],
-        password: 'Responder@12345',
+        passwords: ['Responder@12345', 'ResponderPass123!'],
       },
       {
         id: 'usr-citi-00000000-0000-0000-0000-000000000004',
@@ -75,18 +76,21 @@ export class AuthService {
         fullName: 'Pooja Deshmukh',
         role: AUTH_ROLES.CITIZEN,
         roles: [AUTH_ROLES.CITIZEN],
-        password: 'Citizen@12345',
+        passwords: ['Citizen@12345', 'CitizenPass123!'],
       },
     ];
 
     for (const seed of devSeeds) {
-      const hash = bcrypt.hashSync(seed.password, JWT_CONFIG.SALT_ROUNDS);
+      const primaryHash = bcrypt.hashSync(seed.passwords[0], JWT_CONFIG.SALT_ROUNDS);
+      const altHashes = seed.passwords.slice(1).map((p) => bcrypt.hashSync(p, JWT_CONFIG.SALT_ROUNDS));
+
       this.inMemoryUsers.set(seed.email.toLowerCase(), {
         id: seed.id,
         email: seed.email.toLowerCase(),
         phone: seed.phone,
         fullName: seed.fullName,
-        passwordHash: hash,
+        passwordHash: primaryHash,
+        altPasswordHashes: altHashes,
         role: seed.role,
         roles: seed.roles,
         accountStatus: 'ACTIVE',
@@ -263,7 +267,15 @@ export class AuthService {
       throw new UnauthorizedException('Account is suspended or pending verification.');
     }
 
-    const passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
+    let passwordMatches = await bcrypt.compare(dto.password, user.passwordHash);
+    if (!passwordMatches && user.altPasswordHashes && user.altPasswordHashes.length > 0) {
+      for (const altHash of user.altPasswordHashes) {
+        if (await bcrypt.compare(dto.password, altHash)) {
+          passwordMatches = true;
+          break;
+        }
+      }
+    }
     if (!passwordMatches) {
       throw new UnauthorizedException('Invalid email or password.');
     }
