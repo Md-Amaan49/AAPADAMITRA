@@ -53,3 +53,4 @@ export class RegisterCitizenDto {
   @IsBoolean()
   termsAccepted!: boolean;
 }
+

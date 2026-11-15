@@ -16,3 +16,4 @@ export class LoginDto {
   @IsBoolean()
   rememberMe?: boolean;
 }
+
