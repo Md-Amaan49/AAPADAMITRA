@@ -525,12 +525,19 @@ a {
   gap: 0.75rem;
 }
 
-/* Hero Section */
+/* Hero Section — Clean Command Center Theme */
 .hero-section {
-  background: linear-gradient(135deg, #0a192f 0%, #1e293b 100%);
+  position: relative;
+  background-color: #0b132b;
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(37, 99, 235, 0.28), transparent 70%),
+    radial-gradient(circle at 85% 85%, rgba(6, 182, 212, 0.12), transparent 50%),
+    radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 28px 28px;
   color: #ffffff;
-  padding: 5rem 1.5rem 4rem 1.5rem;
+  padding: 5.5rem 1.5rem 4.5rem 1.5rem;
   text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .hero-container {
@@ -542,8 +549,8 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   padding: 0.35rem 0.85rem;
   border-radius: 9999px;
   font-size: 0.8rem;
@@ -551,6 +558,7 @@ a {
   letter-spacing: 0.05em;
   margin-bottom: 1.5rem;
   color: #93c5fd;
+  backdrop-filter: blur(8px);
 }
 
 .hero-title {
@@ -618,59 +626,16 @@ a {
   border: 1px solid var(--border-color);
 }
 
-/* Realistic Atmospheric Backdrops & Glassmorphism */
-.hero-realistic-bg {
+/* Interactive Component Accents */
+.hazard-card {
   position: relative;
-  background: 
-    linear-gradient(135deg, rgba(10, 25, 47, 0.90) 0%, rgba(15, 23, 42, 0.92) 100%),
-    url('/images/dam-hero.jpg') center/cover no-repeat,
-    url('https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1920&q=80') center/cover no-repeat,
-    linear-gradient(135deg, #0a192f 0%, #1e293b 100%);
-  background-blend-mode: multiply, normal, normal;
-  border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+  overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.dashboard-realistic-bg {
-  background: 
-    linear-gradient(135deg, rgba(248, 250, 252, 0.97) 0%, rgba(241, 245, 249, 0.98) 100%),
-    url('/images/command-center.jpg') center/cover fixed no-repeat,
-    url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1920&q=80') center/cover fixed no-repeat;
-  background-blend-mode: overlay, normal;
-}
-
-.hazard-card-flood-bg {
-  background: 
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(239, 246, 255, 0.96) 100%),
-    url('https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&w=600&q=80') center/cover no-repeat;
-  background-blend-mode: overlay;
-}
-
-.hazard-card-cyclone-bg {
-  background: 
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 253, 250, 0.96) 100%),
-    url('https://images.unsplash.com/photo-1527482797697-8795b05a13fe?auto=format&fit=crop&w=600&q=80') center/cover no-repeat;
-  background-blend-mode: overlay;
-}
-
-.hazard-card-landslide-bg {
-  background: 
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(254, 252, 232, 0.96) 100%),
-    url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80') center/cover no-repeat;
-  background-blend-mode: overlay;
-}
-
-.hazard-card-tsunami-bg {
-  background: 
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 249, 255, 0.96) 100%),
-    url('https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80') center/cover no-repeat;
-  background-blend-mode: overlay;
-}
-
-.hazard-card-drought-bg {
-  background: 
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(255, 251, 235, 0.96) 100%),
-    url('https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=600&q=80') center/cover no-repeat;
-  background-blend-mode: overlay;
+.hazard-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
 }
 
 .glass-panel {

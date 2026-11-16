@@ -14,6 +14,9 @@
     "db:verify": "node scripts/verify-database-integration.js",
     "db:studio": "pnpm --filter @aapadamitra/api prisma:studio",
     "build": "pnpm --filter @aapadamitra/contracts build && pnpm --filter @aapadamitra/api build && pnpm --filter @aapadamitra/web build",
+    "build:api": "pnpm --filter @aapadamitra/contracts build && pnpm --filter @aapadamitra/api prisma:generate && pnpm --filter @aapadamitra/api build",
+    "build:web": "pnpm --filter @aapadamitra/contracts build && pnpm --filter @aapadamitra/web build",
+    "start:api": "pnpm --filter @aapadamitra/api start:prod",
     "lint": "pnpm -r run lint",
     "test": "pnpm -r run test"
   },

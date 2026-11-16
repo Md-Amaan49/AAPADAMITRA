@@ -42,9 +42,9 @@ async function bootstrap() {
   // Development route for Swagger documentation: /api/docs
   SwaggerModule.setup('api/docs', app, document);
 
-  const port = configService.get<number>('API_PORT', 3000);
-  await app.listen(port);
-  console.log(`[AAPADAMITRA API] Service running on http://localhost:${port}/${globalPrefix}`);
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : configService.get<number>('API_PORT', 3000);
+  await app.listen(port, '0.0.0.0');
+  console.log(`[AAPADAMITRA API] Service running on http://0.0.0.0:${port}/${globalPrefix}`);
   console.log(`[AAPADAMITRA API] Swagger documentation available at http://localhost:${port}/api/docs`);
 }
 

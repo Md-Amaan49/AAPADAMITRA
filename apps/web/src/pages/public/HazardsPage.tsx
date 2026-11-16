@@ -103,18 +103,26 @@ export const HazardsPage: React.FC = () => {
       {/* Hazard Cards Grid */}
       <div className="grid-2">
         {hazards.map((h) => {
-          const bgClass = h.id === 'flood' 
-            ? 'hazard-card-flood-bg' 
+          const accentColor = h.id === 'flood' 
+            ? '#0284c7' 
             : h.id === 'cyclone' 
-            ? 'hazard-card-cyclone-bg' 
+            ? '#0d9488' 
             : h.id === 'landslide' 
-            ? 'hazard-card-landslide-bg' 
+            ? '#d97706' 
             : h.id === 'tsunami' 
-            ? 'hazard-card-tsunami-bg' 
-            : '';
+            ? '#4f46e5' 
+            : '#ea580c';
 
           return (
-            <div key={h.id} className={`card ${bgClass}`} style={{ display: 'flex', flexDirection: 'column' }}>
+            <div 
+              key={h.id} 
+              className="card hazard-card" 
+              style={{ 
+                display: 'flex', 
+                flexDirection: 'column',
+                borderTop: `3px solid ${accentColor}`
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <div style={{ background: '#ffffff', padding: '0.5rem', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: 'var(--shadow-sm)' }}>

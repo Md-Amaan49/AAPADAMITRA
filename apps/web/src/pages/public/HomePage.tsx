@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  ShieldAlert, 
-  Users, 
-  ArrowRight, 
-  Waves, 
+import {
+  ShieldAlert,
+  Users,
+  ArrowRight,
+  Waves,
   Cpu,
   MapPin
 } from 'lucide-react';
@@ -39,8 +39,8 @@ export const HomePage: React.FC = () => {
 
   return (
     <div>
-      {/* Hero Section with Realistic Atmospheric Backdrop */}
-      <section className="hero-section hero-realistic-bg">
+      {/* Hero Section */}
+      <section className="hero-section">
         <div className="hero-container">
           <div className="hero-tag">
             <ShieldAlert size={14} />
@@ -58,7 +58,7 @@ export const HomePage: React.FC = () => {
               <span>Citizen Portal Sign Up</span>
               <ArrowRight size={18} />
             </Link>
-            <Link to="/login" className="btn-secondary" style={{ padding: '0.75rem 1.75rem', fontSize: '1rem', background: 'rgba(255,255,255,0.1)', color: '#ffffff', borderColor: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(4px)' }}>
+            <Link to="/login" className="btn-secondary" style={{ padding: '0.75rem 1.75rem', fontSize: '1rem', background: 'transparent', color: '#ffffff', borderColor: 'rgba(255,255,255,0.3)' }}>
               <span>Official Login</span>
             </Link>
           </div>
