@@ -12,8 +12,8 @@ services:
     runtime: node
     plan: free
     region: oregon
-    buildCommand: corepack enable && pnpm install && pnpm --filter @aapadamitra/contracts build && pnpm --filter @aapadamitra/api prisma:generate && pnpm --filter @aapadamitra/api build
-    startCommand: pnpm --filter @aapadamitra/api start:prod
+    buildCommand: corepack enable && pnpm install && pnpm run build:api
+    startCommand: pnpm run start:api
     healthCheckPath: /api/v1/health
     autoDeploy: true
     envVars:
@@ -44,9 +44,7 @@ services:
   - type: web
     name: aapadamitra-web
     runtime: static
-    plan: free
-    region: oregon
-    buildCommand: corepack enable && pnpm install && pnpm --filter @aapadamitra/contracts build && pnpm --filter @aapadamitra/web build
+    buildCommand: corepack enable && pnpm install && pnpm run build:web
     staticPublishPath: ./apps/web/dist
     autoDeploy: true
     routes:
