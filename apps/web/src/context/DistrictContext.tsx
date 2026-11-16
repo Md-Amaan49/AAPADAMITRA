@@ -7,7 +7,7 @@ export interface DistrictContextType {
   availableDistricts: string[];
 }
 
-export const MAHARASHTRA_DISTRICTS = [
+const MAHARASHTRA_DISTRICTS = [
   'Nanded',
   'Mumbai',
   'Pune',
